@@ -61,25 +61,6 @@ const posts = sortAsc(await getCollection('blog')).slice(0, POSTS_TO_SHOW)
 				}
 			</div>
 		</section>
-		<Spacer axis="vertical" size={32} />
-		<section>
-			<div class="border-b border-border pb-4">
-				<h2 class="font-medium text-xl md:text-2xl lg:text-3xl text-highlight">Open Source Projects</h2>
-			</div>
-			<Spacer axis="vertical" size={8} />
-			<div class="flex gap-10 flex-col">
-				{
-					OSS_PROJECTS.map((oss) => (
-						<div>
-							<Link variant="highlight" href={oss.url}>
-								{oss.name}
-							</Link>
-							<Spacer axis="vertical" size={2} />
-							<div class="text-faded">{oss.description}</div>
-						</div>
-					))
-				}
-			</div>
-		</section>
+		
 	</SkipNavContent>
 </Layout>

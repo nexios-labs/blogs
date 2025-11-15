@@ -7,19 +7,19 @@ export const SITE: Record<string, string> = {
 	/**
 	 * Base URL of your site, used in sitemap generation
 	 */
-	url: 'https://astro-theme-minimal-blog.lekoarts.de',
+	url: 'https://nexios.dev',
 	/**
 	 * Site-wide title
 	 */
-	title: 'Minimal Blog',
+	title: 'Nexios Blog',
 	/**
 	 * Used on index page and as a fallback if no title is set
 	 */
-	titleDefault: 'Astro Theme: Minimal Blog',
+	titleDefault: 'Nexios - Modern HTTP Client for JavaScript',
 	/**
 	 * Used in meta tags, RSS feed, and other places
 	 */
-	description: 'Minimal Astro blog theme with extensive code syntax highlighting capabilities, focus on typography, and clean design bringing your content to the forefront.',
+	description: 'The official blog for Nexios - a modern, lightweight HTTP client for JavaScript and TypeScript with advanced features like interceptors, retries, and more.',
 	/**
 	 * Language used in the <html> tag
 	 */
@@ -31,7 +31,7 @@ export const SITE: Record<string, string> = {
 	/**
 	 * Default author name that gets added to meta tags
 	 */
-	defaultAuthor: 'LekoArts',
+	defaultAuthor: 'Nexios Team',
 }
 
 interface Header {
@@ -61,15 +61,15 @@ export const HEADER: Header = {
 	 */
 	external: [
 		{
-			title: 'Bluesky',
-			url: 'https://bsky.app/profile/lekoarts.de',
+			title: 'GitHub',
+			url: 'https://github.com/nexios-labs/nexios',
 			props: {
 				target: '_blank',
 			},
 		},
 		{
-			title: 'Homepage',
-			url: 'https://www.lekoarts.de/?utm_source=astro-theme-minimal-blog',
+			title: 'Documentation',
+			url: 'https://nexioslabs.com',
 			props: {
 				target: '_blank',
 			},
@@ -83,10 +83,27 @@ export const HEADER: Header = {
 export const FRONTMATTER_TAGS = new Map(
 	[
 		['General', 'general'] as const,
-		['Coding', 'coding'] as const,
-		['MDX', 'mdx'] as const,
+		['HTTP Client', 'http-client'] as const,
+		['JavaScript', 'javascript'] as const,
+		['TypeScript', 'typescript'] as const,
+		['Python', 'python'] as const,
+		['API', 'api'] as const,
+		['REST API', 'rest-api'] as const,
+		['GraphQL', 'graphql'] as const,
+		['WebSocket', 'websocket'] as const,
+		['Tutorial', 'tutorial'] as const,
+		['Release', 'release'] as const,
 		['Open Source', 'open-source'] as const,
-		['서울', '서울'] as const,
+		['Framework', 'framework'] as const,
+		['Web Development', 'web-development'] as const,
+		['Middleware', 'middleware'] as const,
+		['Authentication', 'authentication'] as const,
+		['Security', 'security'] as const,
+		['Performance', 'performance'] as const,
+		['Testing', 'testing'] as const,
+		['Deployment', 'deployment'] as const,
+		['Database', 'database'] as const,
+		['Real-time', 'real-time'] as const,
 	],
 )
 
