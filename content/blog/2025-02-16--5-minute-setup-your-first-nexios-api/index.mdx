@@ -1,0 +1,684 @@
+---
+title: '5-Minute Setup: Your First Nexios API'
+slug: 5-minute-setup-your-first-nexios-api
+description: Build a complete REST API with CRUD operations in just 5 minutes using Nexios. No complex configurations, no endless boilerplate - just clean, modern API development.
+date: 2025-02-16
+lastUpdated: 2025-02-16
+tags:
+  - Tutorial
+  - REST API
+  - Python
+  - Framework
+---
+
+Building APIs shouldn't feel like climbing Mount Everest. With Nexios, you can go from zero to a fully functional API in just 5 minutes. No complex configurations, no endless boilerplate, no headaches – just clean, modern Python API development that gets out of your way.
+
+In this guide, we'll build a complete REST API for a simple task management system. By the end, you'll have endpoints for creating, reading, updating, and deleting tasks, plus you'll understand the core concepts that make Nexios so powerful yet simple.
+
+## What Makes Nexios Different?
+
+Before we dive into the code, let's talk about why Nexios exists. Traditional Python web frameworks often require you to write a lot of setup code before you can even handle your first request. You need to configure middleware, set up routing, handle errors, manage request parsing, and more.
+
+Nexios flips this on its head. It's built with modern Python in mind, leveraging async/await and type hints to give you a development experience that feels natural and productive. Here's what you get out of the box:
+
+- **Zero-config setup** - Start coding immediately
+- **Built-in type safety** - Full type hint support without configuration
+- **Modern async/await patterns** - High-performance concurrent request handling
+- **Automatic request parsing** - JSON, form data, and file uploads just work
+- **Intelligent error handling** - Meaningful error responses without boilerplate
+- **Hot reload development** - See changes instantly with uvicorn
+- **Production-ready defaults** - Security and performance built-in
+- **Automatic OpenAPI docs** - Interactive API documentation at `/docs`
+
+## Prerequisites
+
+You'll need Python 3.9 or higher installed on your machine. That's it. No database setup, no complex tooling – we'll keep this simple and focused.
+
+## Step 1: Project Initialization (30 seconds)
+
+Let's start by creating a new project directory and setting up a Python virtual environment:
+
+```bash
+mkdir my-nexios-api
+cd my-nexios-api
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+Now install Nexios. It's a single dependency:
+
+```bash
+pip install nexios
+```
+
+That's it for setup. No complex configurations, no build steps, no compilation. Nexios is ready to use immediately.
+
+## Step 2: Your First Route (1 minute)
+
+Create a file called `main.py` and add this code:
+
+```python
+from nexios import NexiosApp
+from nexios.http import Request, Response
+import uvicorn
+from datetime import datetime
+import time
+
+# Create a new Nexios application
+app = NexiosApp()
+
+# Our first route - a simple health check
+@app.get("/health")
+async def health_check(request: Request, response: Response):
+    return response.json({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "uptime": time.time()
+    })
+
+# Start the server
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
+```
+
+Notice a few things here:
+
+1. **Clean Python syntax** - No complex imports or configurations
+2. **Async/await everywhere** - Route handlers are naturally async
+3. **Type hints supported** - Request and Response objects are fully typed
+4. **Simple response handling** - Use `response.json()` for JSON responses
+5. **Clean, readable code** - The intent is immediately clear
+
+Run your server:
+
+```bash
+python main.py
+```
+
+Open your browser to `http://localhost:8000/health` and you'll see:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-02-16T10:30:45.123456",
+  "uptime": 1708084245.123
+}
+```
+
+Congratulations! You just built your first Nexios API. But we're just getting started.
+
+## Step 3: Building a Task Management API (3 minutes)
+
+Now let's build something more substantial. We'll create a complete CRUD API for managing tasks. Replace your `main.py` with this expanded version:
+
+```python
+from nexios import NexiosApp
+from nexios.http import Request, Response
+import uvicorn
+from datetime import datetime
+from typing import List, Dict, Optional
+
+# Create a new Nexios application
+app = NexiosApp(
+    title="Task Management API",
+    version="1.0.0",
+    description="A simple task management API built with Nexios"
+)
+
+# In-memory storage for our tasks
+# In a real app, you'd use a database
+tasks: List[Dict] = [
+    {"id": 1, "title": "Learn Nexios", "completed": False, "created_at": datetime.now().isoformat()},
+    {"id": 2, "title": "Build an API", "completed": False, "created_at": datetime.now().isoformat()},
+    {"id": 3, "title": "Deploy to production", "completed": False, "created_at": datetime.now().isoformat()}
+]
+
+next_id = 4
+
+def find_task(task_id: int) -> Optional[Dict]:
+    """Utility function to find a task by ID"""
+    return next((task for task in tasks if task["id"] == task_id), None)
+
+# GET /tasks - Retrieve all tasks
+@app.get("/tasks")
+async def get_tasks(request: Request, response: Response):
+    # Support filtering by completion status
+    completed_param = request.query_params.get("completed")
+    
+    filtered_tasks = tasks
+    
+    if completed_param is not None:
+        is_completed = completed_param.lower() == "true"
+        filtered_tasks = [task for task in tasks if task["completed"] == is_completed]
+    
+    return response.json({
+        "tasks": filtered_tasks,
+        "total": len(filtered_tasks),
+        "timestamp": datetime.now().isoformat()
+    })
+
+# GET /tasks/{task_id} - Retrieve a specific task
+@app.get("/tasks/{task_id:int}")
+async def get_task(request: Request, response: Response):
+    task_id = request.path_params.task_id
+    task = find_task(task_id)
+    
+    if not task:
+        return response.json({
+            "error": "Task not found",
+            "message": f"No task exists with ID {task_id}"
+        }, status=404)
+    
+    return response.json({"task": task})
+
+# POST /tasks - Create a new task
+@app.post("/tasks")
+async def create_task(request: Request, response: Response):
+    global next_id
+    data = await request.json
+    
+    title = data.get("title", "").strip()
+    description = data.get("description", "").strip()
+    
+    # Basic validation
+    if not title:
+        return response.json({
+            "error": "Validation failed",
+            "message": "Task title is required and cannot be empty"
+        }, status=400)
+    
+    new_task = {
+        "id": next_id,
+        "title": title,
+        "description": description,
+        "completed": False,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat()
+    }
+    
+    tasks.append(new_task)
+    next_id += 1
+    
+    return response.json({
+        "message": "Task created successfully",
+        "task": new_task
+    }, status=201)
+
+# PUT /tasks/{task_id} - Update a task
+@app.put("/tasks/{task_id:int}")
+async def update_task(request: Request, response: Response):
+    task_id = request.path_params.task_id
+    task = find_task(task_id)
+    
+    if not task:
+        return response.json({
+            "error": "Task not found",
+            "message": f"No task exists with ID {task_id}"
+        }, status=404)
+    
+    data = await request.json
+    
+    # Update only provided fields
+    if "title" in data:
+        title = data["title"].strip()
+        if not title:
+            return response.json({
+                "error": "Validation failed",
+                "message": "Task title cannot be empty"
+            }, status=400)
+        task["title"] = title
+    
+    if "description" in data:
+        task["description"] = data["description"].strip()
+    
+    if "completed" in data:
+        task["completed"] = bool(data["completed"])
+    
+    task["updated_at"] = datetime.now().isoformat()
+    
+    return response.json({
+        "message": "Task updated successfully",
+        "task": task
+    })
+
+# DELETE /tasks/{task_id} - Delete a task
+@app.delete("/tasks/{task_id:int}")
+async def delete_task(request: Request, response: Response):
+    task_id = request.path_params.task_id
+    
+    for i, task in enumerate(tasks):
+        if task["id"] == task_id:
+            deleted_task = tasks.pop(i)
+            return response.json({
+                "message": "Task deleted successfully",
+                "task": deleted_task
+            })
+    
+    return response.json({
+        "error": "Task not found",
+        "message": f"No task exists with ID {task_id}"
+    }, status=404)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check(request: Request, response: Response):
+    return response.json({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "tasks_count": len(tasks)
+    })
+
+# Start the server
+if __name__ == "__main__":
+    print("🚀 Task Management API running on http://localhost:8000")
+    print("📝 Try these endpoints:")
+    print("  GET    /tasks           - List all tasks")
+    print("  GET    /tasks/{id}      - Get a specific task")
+    print("  POST   /tasks           - Create a new task")
+    print("  PUT    /tasks/{id}      - Update a task")
+    print("  DELETE /tasks/{id}      - Delete a task")
+    print("  GET    /health          - Health check")
+    print("📖 API Documentation: http://localhost:8000/docs")
+    
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
+```
+
+## Step 4: Testing Your API (1 minute)
+
+Now let's test our API. Restart your server and try these requests:
+
+### Interactive Documentation
+First, visit `http://localhost:8000/docs` to see the automatically generated interactive API documentation. You can test all endpoints directly from your browser!
+
+### Get all tasks:
+```bash
+curl http://localhost:8000/tasks
+```
+
+Response:
+```json
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Learn Nexios",
+      "completed": false,
+      "created_at": "2025-02-16T10:30:45.123456"
+    },
+    {
+      "id": 2,
+      "title": "Build an API",
+      "completed": false,
+      "created_at": "2025-02-16T10:30:45.123456"
+    },
+    {
+      "id": 3,
+      "title": "Deploy to production",
+      "completed": false,
+      "created_at": "2025-02-16T10:30:45.123456"
+    }
+  ],
+  "total": 3,
+  "timestamp": "2025-02-16T10:35:22.456789"
+}
+```
+
+### Create a new task:
+```bash
+curl -X POST http://localhost:8000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Write documentation", "description": "Document the new API endpoints"}'
+```
+
+Response:
+```json
+{
+  "message": "Task created successfully",
+  "task": {
+    "id": 4,
+    "title": "Write documentation",
+    "description": "Document the new API endpoints",
+    "completed": false,
+    "created_at": "2025-02-16T10:36:15.789123",
+    "updated_at": "2025-02-16T10:36:15.789123"
+  }
+}
+```
+
+### Update a task:
+```bash
+curl -X PUT http://localhost:8000/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{"completed": true}'
+```
+
+Response:
+```json
+{
+  "message": "Task updated successfully",
+  "task": {
+    "id": 1,
+    "title": "Learn Nexios",
+    "completed": true,
+    "created_at": "2025-02-16T10:30:45.123456",
+    "updated_at": "2025-02-16T10:37:02.345678"
+  }
+}
+```
+
+### Filter completed tasks:
+```bash
+curl http://localhost:8000/tasks?completed=true
+```
+
+### Delete a task:
+```bash
+curl -X DELETE http://localhost:8000/tasks/2
+```
+
+## What Just Happened?
+
+In less than 5 minutes, you built a complete REST API with:
+
+- **Full CRUD operations** - Create, read, update, and delete tasks
+- **Input validation** - Proper error handling for invalid data
+- **Query parameters** - Filter tasks by completion status
+- **HTTP status codes** - Appropriate responses for different scenarios
+- **Structured responses** - Consistent JSON format across all endpoints
+- **Error handling** - Meaningful error messages
+
+## Key Nexios Features Demonstrated
+
+### 1. Automatic Request Parsing
+Notice how we never had to manually parse JSON or configure request parsing. Nexios automatically handles:
+- JSON request bodies (`await request.json`)
+- Path parameters (`request.path_params.task_id`)
+- Query strings (`request.query_params.get("completed")`)
+- Form data and file uploads
+- Type conversion for path parameters (`{task_id:int}`)
+
+### 2. Simplified Response Handling
+Instead of manually setting headers and status codes:
+```python
+# Traditional approach
+response.headers["Content-Type"] = "application/json"
+response.status_code = 201
+return json.dumps({"task": new_task})
+```
+
+You just write:
+```python
+return response.json({"task": new_task}, status=201)
+```
+
+Nexios automatically:
+- Sets the correct Content-Type header
+- Serializes your response to JSON
+- Handles status codes (200 by default, or whatever you specify)
+
+### 3. Modern Async/Await
+Every route handler is naturally async. This enables high-performance concurrent request handling without blocking operations.
+
+### 4. Built-in Error Handling
+When you return a response with an error status code, Nexios automatically formats it appropriately. No need for custom error middleware for basic scenarios.
+
+### 5. Automatic OpenAPI Documentation
+Every endpoint you create is automatically documented and available at `/docs` with an interactive interface for testing.
+
+## Adding More Features
+
+Let's enhance our API with a few more features to show Nexios's flexibility:
+
+```python
+# Add these routes after your existing ones
+
+# PATCH /tasks/{task_id}/toggle - Toggle task completion
+@app.patch("/tasks/{task_id:int}/toggle")
+async def toggle_task(request: Request, response: Response):
+    task_id = request.path_params.task_id
+    task = find_task(task_id)
+    
+    if not task:
+        return response.json({
+            "error": "Task not found",
+            "message": f"No task exists with ID {task_id}"
+        }, status=404)
+    
+    task["completed"] = not task["completed"]
+    task["updated_at"] = datetime.now().isoformat()
+    
+    status_text = "completed" if task["completed"] else "reopened"
+    return response.json({
+        "message": f"Task {status_text}",
+        "task": task
+    })
+
+# GET /tasks/stats - Get task statistics
+@app.get("/tasks/stats")
+async def get_task_stats(request: Request, response: Response):
+    total = len(tasks)
+    completed = len([task for task in tasks if task["completed"]])
+    pending = total - completed
+    completion_rate = round((completed / total) * 100) if total > 0 else 0
+    
+    return response.json({
+        "total": total,
+        "completed": completed,
+        "pending": pending,
+        "completion_rate": f"{completion_rate}%",
+        "oldest_task": tasks[0] if tasks else None,
+        "newest_task": tasks[-1] if tasks else None
+    })
+
+# POST /tasks/bulk - Create multiple tasks at once
+@app.post("/tasks/bulk")
+async def create_bulk_tasks(request: Request, response: Response):
+    global next_id
+    data = await request.json
+    task_list = data.get("tasks", [])
+    
+    if not isinstance(task_list, list) or len(task_list) == 0:
+        return response.json({
+            "error": "Validation failed",
+            "message": "Request must include a 'tasks' array with at least one task"
+        }, status=400)
+    
+    created_tasks = []
+    errors = []
+    
+    for index, task_data in enumerate(task_list):
+        title = task_data.get("title", "").strip()
+        if not title:
+            errors.append({
+                "index": index,
+                "error": "Title is required",
+                "task": task_data
+            })
+            continue
+        
+        new_task = {
+            "id": next_id,
+            "title": title,
+            "description": task_data.get("description", "").strip(),
+            "completed": bool(task_data.get("completed", False)),
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        tasks.append(new_task)
+        created_tasks.append(new_task)
+        next_id += 1
+    
+    if errors and not created_tasks:
+        return response.json({
+            "error": "All tasks failed validation",
+            "errors": errors
+        }, status=400)
+    
+    return response.json({
+        "message": f"Successfully created {len(created_tasks)} tasks",
+        "created": created_tasks,
+        "errors": errors if errors else None,
+        "summary": {
+            "total": len(created_tasks),
+            "failed": len(errors)
+        }
+    })
+```
+
+## Testing the New Features
+
+### Toggle task completion:
+```bash
+curl -X PATCH http://localhost:8000/tasks/1/toggle
+```
+
+### Get task statistics:
+```bash
+curl http://localhost:8000/tasks/stats
+```
+
+Response:
+```json
+{
+  "total": 4,
+  "completed": 1,
+  "pending": 3,
+  "completion_rate": "25%",
+  "oldest_task": {
+    "id": 1,
+    "title": "Learn Nexios",
+    "completed": true,
+    "created_at": "2025-02-16T10:30:45.123456"
+  },
+  "newest_task": {
+    "id": 4,
+    "title": "Write documentation",
+    "description": "Document the new API endpoints",
+    "completed": false,
+    "created_at": "2025-02-16T10:36:15.789123"
+  }
+}
+```
+
+### Create multiple tasks:
+```bash
+curl -X POST http://localhost:8000/tasks/bulk \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tasks": [
+      {"title": "Review code", "description": "Review pull requests"},
+      {"title": "Update dependencies", "completed": false},
+      {"title": "Write tests"}
+    ]
+  }'
+```
+
+## Production Considerations
+
+While our 5-minute API is fully functional, here are some considerations for production use:
+
+### 1. Database Integration
+Replace the in-memory list with a real database:
+
+```python
+from nexios import NexiosApp, Depend
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+# Database setup
+engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession)
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+
+@app.get("/tasks")
+async def get_tasks(request: Request, response: Response, db: AsyncSession = Depend(get_db)):
+    # Use SQLAlchemy or your preferred ORM
+    result = await db.execute(select(Task))
+    tasks = result.scalars().all()
+    return response.json({"tasks": [task.to_dict() for task in tasks]})
+```
+
+### 2. Input Validation with Pydantic
+Add proper data validation:
+
+```python
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class TaskCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    completed: bool = False
+
+@app.post("/tasks")
+async def create_task(request: Request, response: Response):
+    try:
+        data = await request.json
+        task_data = TaskCreate(**data)
+        # Create task with validated data
+    except Exception as e:
+        return response.json({
+            "error": "Validation failed",
+            "details": str(e)
+        }, status=400)
+```
+
+### 3. Authentication & Authorization
+Add JWT authentication:
+
+```python
+from nexios.auth import JWTAuthBackend, AuthenticationMiddleware
+from nexios.auth.decorator import auth
+
+# Setup authentication
+auth_backend = JWTAuthBackend()
+app.add_middleware(AuthenticationMiddleware(backend=auth_backend))
+
+@app.get("/tasks")
+@auth(["jwt"])  # Require JWT authentication
+async def get_tasks(request: Request, response: Response):
+    user = request.user  # Access authenticated user
+    # Return user's tasks
+    return response.json({"tasks": user_tasks})
+```
+
+## What's Next?
+
+You've just built a complete REST API in 5 minutes with Nexios. Here are some next steps to explore:
+
+1. **Add a database** - Connect to PostgreSQL, SQLite, or your preferred database with SQLAlchemy
+2. **Implement authentication** - Add JWT tokens or session-based auth with built-in auth middleware
+3. **Add real-time features** - Use WebSockets for live updates and real-time communication
+4. **Deploy to production** - Deploy to Railway, Heroku, or your preferred Python hosting platform
+5. **Add testing** - Write unit and integration tests with pytest and Nexios's testing utilities
+6. **Explore the docs** - Visit the interactive API documentation at `/docs`
+7. **Add monitoring** - Integrate structured logging and metrics collection
+
+## Conclusion
+
+Nexios proves that building APIs doesn't have to be complicated. In just 5 minutes, we created a fully functional task management API with:
+
+- 8 different endpoints
+- Full CRUD operations
+- Input validation and error handling
+- Query parameters and filtering
+- Bulk operations
+- Statistics endpoints
+- Automatic OpenAPI documentation
+- Type safety with Python type hints
+
+The code is clean, readable, and maintainable. There's no magic, no hidden complexity – just modern Python that does exactly what you expect.
+
+The best part? This is just the beginning. Nexios scales from simple APIs like this one to complex, production-grade applications with thousands of endpoints. The same principles and patterns you learned here will serve you well as your applications grow.
+
+Ready to build your next API? Give Nexios a try and experience the joy of Python web development without the friction.
+
+---
+
+*Want to learn more about Nexios? Check out our [documentation](https://nexios.dev/docs) for advanced features, deployment guides, and best practices.*
