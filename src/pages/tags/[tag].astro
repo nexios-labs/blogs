@@ -39,7 +39,7 @@ const { tagName, postsWithTag } = Astro.props
 ---
 
 <Layout>
-	<Seo slot="seo" title={`Tag: ${tagName}`} />
+	<Seo slot="seo" title={`Tag: ${tagName}`} description={`Browse all Nexios blog posts tagged with ${tagName}. Find tutorials, guides, and insights about ${tagName}.`} />
 	<SkipNavContent>
 		<div class="border-b border-border pb-4 flex justify-between items-center">
 			<h1 class="font-medium text-xl md:text-2xl lg:text-3xl text-highlight">Tag: {tagName}</h1>

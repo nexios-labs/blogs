@@ -30,7 +30,7 @@ const { Content } = await render(entry)
 ---
 
 <Layout>
-	<Seo slot="seo" forceTitle={post.title} description={post.description} image={post.image}>
+	<Seo slot="seo" forceTitle={post.title} description={post.description} image={post.image} useDynamicOg={!post.image}>
 		<meta name="twitter:label1" value="Author" />
 		<meta name="twitter:data1" data-pagefind-meta="author" value={SITE.defaultAuthor} />
 		<meta name="twitter:label2" value="Tags" />

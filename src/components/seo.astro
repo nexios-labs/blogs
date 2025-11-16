@@ -1,5 +1,6 @@
 ---
 import { SITE } from '@constants'
+import { generateDynamicOgImage } from '@utils'
 
 interface Props {
 	title?: string
@@ -7,9 +8,10 @@ interface Props {
 	description?: string
 	image?: string
 	noIndex?: boolean
+	useDynamicOg?: boolean
 }
 
-const { title, forceTitle, description, image, noIndex = false } = Astro.props
+const { title, forceTitle, description, image, noIndex = false, useDynamicOg = true } = Astro.props
 const {
 	title: siteTitle,
 	titleDefault: siteTitleDefault,
@@ -27,6 +29,20 @@ const seo = {
 
 if (forceTitle) {
 	seo.title = forceTitle
+}
+
+// Generate dynamic OG image if enabled and no custom image is provided
+if (useDynamicOg && !image) {
+	const ogTitle = forceTitle || title || siteTitleDefault
+	const ogSubtitle = description || siteDescription
+	
+	seo.image = new URL(generateDynamicOgImage({
+		title: ogTitle,
+		subtitle: ogSubtitle,
+		name: 'Nexios Labs',
+		website: 'nexioslabs.com',
+		logo: 'nexioslogo'
+	}))
 }
 ---
 

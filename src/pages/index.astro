@@ -34,7 +34,7 @@ const posts = sortAsc(await getCollection('blog')).slice(0, POSTS_TO_SHOW)
 ---
 
 <Layout>
-	<Seo slot="seo" />
+	<Seo slot="seo" title="Home" description="The official blog for Nexios - a modern, async-first Python web framework designed for high-performance applications." />
 	<SkipNavContent>
 		<h1 class="sr-only">{SITE.title}</h1>
 		<Prose>

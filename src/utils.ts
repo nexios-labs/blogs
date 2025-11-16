@@ -135,3 +135,4 @@ export function pagefindIntegration(): AstroIntegration {
 		},
 	}
 }
+export * from './utils/og-image'
