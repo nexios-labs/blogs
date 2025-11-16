@@ -10,21 +10,21 @@ import Prose from '@components/prose.astro'
 import Spacer from '@components/spacer.astro'
 import { SITE } from '@constants'
 
-const OSS_PROJECTS: Array<{ name: string; url: string; description: string }> = [
+const NEXIOS_LINKS: Array<{ name: string; url: string; description: string }> = [
 	{
-		name: 'secco',
-		url: 'https://github.com/LekoArts/secco',
-		description: 'Local package testing made easy',
+		name: 'Documentation',
+		url: 'https://nexioslabs.com',
+		description: 'Complete guides and API reference',
 	},
 	{
-		name: 'astro-loaders',
-		url: 'https://github.com/LekoArts/astro-loaders',
-		description: "Loaders for Astro's Content Layer",
+		name: 'GitHub Repository',
+		url: 'https://github.com/nexios-labs/nexios',
+		description: 'Source code and issue tracking',
 	},
 	{
-		name: 'annum',
-		url: 'https://github.com/LekoArts/annum',
-		description: 'Visualize your Trakt.tv history',
+		name: 'Community',
+		url: 'https://nexioslabs.com/community/',
+		description: 'Join the Nexios community',
 	},
 ]
 
@@ -61,6 +61,25 @@ const posts = sortAsc(await getCollection('blog')).slice(0, POSTS_TO_SHOW)
 				}
 			</div>
 		</section>
-		
+		<Spacer axis="vertical" size={32} />
+		<section>
+			<div class="border-b border-border pb-4">
+				<h2 class="font-medium text-xl md:text-2xl lg:text-3xl text-highlight">Explore Nexios</h2>
+			</div>
+			<Spacer axis="vertical" size={8} />
+			<div class="grid gap-6 md:grid-cols-3">
+				{
+					NEXIOS_LINKS.map((link) => (
+						<div class="border border-border rounded-lg p-6 hover:border-primary transition-colors">
+							<Link variant="highlight" href={link.url} class="font-medium text-lg">
+								{link.name}
+							</Link>
+							<Spacer axis="vertical" size={2} />
+							<p class="text-subtle">{link.description}</p>
+						</div>
+					))
+				}
+			</div>
+		</section>
 	</SkipNavContent>
 </Layout>

@@ -7,7 +7,7 @@ export const SITE: Record<string, string> = {
 	/**
 	 * Base URL of your site, used in sitemap generation
 	 */
-	url: 'https://nexios.dev',
+	url: 'https://blog.nexioslabs.com',
 	/**
 	 * Site-wide title
 	 */
@@ -15,11 +15,11 @@ export const SITE: Record<string, string> = {
 	/**
 	 * Used on index page and as a fallback if no title is set
 	 */
-	titleDefault: 'Nexios - Modern HTTP Client for JavaScript',
+	titleDefault: 'Nexios - Modern Python Web Framework',
 	/**
 	 * Used in meta tags, RSS feed, and other places
 	 */
-	description: 'The official blog for Nexios - a modern, lightweight HTTP client for JavaScript and TypeScript with advanced features like interceptors, retries, and more.',
+	description: 'The official blog for Nexios - a modern, async-first Python web framework designed for high-performance applications. Learn about building APIs, web applications, and more.',
 	/**
 	 * Language used in the <html> tag
 	 */
@@ -31,7 +31,7 @@ export const SITE: Record<string, string> = {
 	/**
 	 * Default author name that gets added to meta tags
 	 */
-	defaultAuthor: 'Nexios Team',
+	defaultAuthor: 'Nexios Labs Team',
 }
 
 interface Header {
@@ -70,6 +70,13 @@ export const HEADER: Header = {
 		{
 			title: 'Documentation',
 			url: 'https://nexioslabs.com',
+			props: {
+				target: '_blank',
+			},
+		},
+		{
+			title: 'Community',
+			url: 'https://nexioslabs.com/community/',
 			props: {
 				target: '_blank',
 			},

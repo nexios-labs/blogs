@@ -14,6 +14,13 @@ const posts = sortAsc(await getCollection('blog'))
 	<Seo slot="seo" title="Blog" />
 	<SkipNavContent>
 		<h1 class="sr-only">Blog</h1>
+		<div class="mb-12">
+			<h2 class="font-medium text-2xl md:text-3xl lg:text-4xl text-highlight mb-4">Nexios Blog</h2>
+			<p class="text-subtle text-lg md:text-xl max-w-3xl">
+				Stay up to date with the latest Nexios framework updates, tutorials, best practices, and community stories. 
+				Learn how to build modern Python web applications with our comprehensive guides and real-world examples.
+			</p>
+		</div>
 		<div class="flex gap-10 flex-col">
 			{
 				posts.map(({ data: post }) => (
