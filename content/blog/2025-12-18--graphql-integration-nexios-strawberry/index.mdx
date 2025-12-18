@@ -1,0 +1,534 @@
+---
+title: 'GraphQL Integration with Nexios and Strawberry: Building Flexible APIs'
+slug: graphql-integration-nexios-strawberry
+description: Learn how to integrate GraphQL with Nexios using Strawberry for building flexible, type-safe APIs with automatic schema generation and real-time capabilities.
+date: 2025-12-18
+lastUpdated: 2025-12-18
+tags:
+  - GraphQL
+  - API
+  - Python
+  - Strawberry
+  - Nexios
+  - Tutorial
+searchIndex: true
+---
+
+GraphQL has revolutionized how we build APIs, giving clients the power to request exactly what they need. When combined with Nexios's high-performance ASGI architecture and Strawberry's elegant Python integration, you get a powerful combination for building modern, flexible APIs.
+
+## Why GraphQL with Nexios?
+
+Traditional REST APIs often suffer from over-fetching or under-fetching data. GraphQL solves this by allowing clients to specify their data requirements in a single query. Here's why this combination shines:
+
+- **Type Safety**: Strawberry provides automatic type generation from Python classes
+- **Performance**: Nexios's async-first architecture handles concurrent GraphQL requests efficiently
+- **Developer Experience**: Built-in GraphiQL interface for API exploration
+- **Real-time Capabilities**: GraphQL subscriptions work seamlessly with Nexios WebSockets
+
+## Getting Started
+
+### Installation
+
+First, install the required packages:
+
+```bash
+pip install nexios nexios_contrib strawberry-graphql
+```
+
+### Basic GraphQL Server
+
+Let's start with a simple GraphQL server:
+
+```python
+import strawberry
+from nexios import NexiosApp
+from nexios_contrib.graphql import GraphQL
+
+@strawberry.type
+class Query:
+    @strawberry.field
+    def hello(self) -> str:
+        return "Hello from Nexios GraphQL!"
+    
+    @strawberry.field
+    def version(self) -> str:
+        return "3.5.0"
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    def say_hello(self, name: str) -> str:
+        return f"Hello, {name}!"
+
+schema = strawberry.Schema(query=Query, mutation=Mutation)
+app = NexiosApp()
+
+# Add GraphQL endpoint at /graphql with GraphiQL interface
+GraphQL(app, schema)
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Visit `http://localhost:8000/graphql` to explore your API with the GraphiQL interface!
+
+## Building a Real-World API
+
+Let's build a more practical example - a blog API with users, posts, and comments.
+
+### Defining Types
+
+```python
+from typing import List, Optional
+import strawberry
+from datetime import datetime
+
+@strawberry.type
+class User:
+    id: int
+    username: str
+    email: str
+    created_at: datetime
+
+@strawberry.type
+class Comment:
+    id: int
+    content: str
+    author: User
+    created_at: datetime
+
+@strawberry.type
+class Post:
+    id: int
+    title: str
+    content: str
+    author: User
+    comments: List[Comment]
+    created_at: datetime
+    updated_at: datetime
+```
+
+### Async Resolvers
+
+Nexios shines with async operations. Here's how to implement async resolvers:
+
+```python
+@strawberry.type
+class Query:
+    @strawberry.field
+    async def posts(self) -> List[Post]:
+        # Simulate database query
+        posts = await get_posts_from_db()
+        return posts
+    
+    @strawberry.field
+    async def post(self, id: int) -> Optional[Post]:
+        # Get single post by ID
+        post = await get_post_by_id(id)
+        return post
+    
+    @strawberry.field
+    async def user(self, id: int) -> Optional[User]:
+        user = await get_user_by_id(id)
+        return user
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    async def create_post(
+        self, 
+        title: str, 
+        content: str, 
+        author_id: int
+    ) -> Post:
+        # Create new post
+        post = await create_post_in_db(title, content, author_id)
+        return post
+    
+    @strawberry.mutation
+    async def add_comment(
+        self, 
+        post_id: int, 
+        content: str, 
+        author_id: int
+    ) -> Comment:
+        comment = await add_comment_to_post(post_id, content, author_id)
+        return comment
+```
+
+### Context Access
+
+GraphQL resolvers often need access to request data like authentication information. Nexios provides this through the GraphQL context:
+
+```python
+@strawberry.type
+class Query:
+    @strawberry.field
+    def current_user(self, info: strawberry.Info) -> Optional[User]:
+        # Access request from context
+        request = info.context["request"]
+        
+        # Get user from authentication token
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            user = await verify_jwt_token(token)
+            return user
+        
+        return None
+    
+    @strawberry.field
+    def user_agent(self, info: strawberry.Info) -> str:
+        request = info.context["request"]
+        return request.headers.get("user-agent", "Unknown")
+```
+
+## Advanced Features
+
+### Custom Scalars
+
+Define custom scalar types for specialized data:
+
+```python
+@strawberry.scalar
+class DateTime:
+    @staticmethod
+    def serialize(value: datetime) -> str:
+        return value.isoformat()
+    
+    @staticmethod
+    def parse_value(value: str) -> datetime:
+        return datetime.fromisoformat(value)
+
+@strawberry.scalar
+class Upload:
+    # Handle file uploads
+    pass
+```
+
+### Subscriptions for Real-time Updates
+
+Combine GraphQL subscriptions with Nexios WebSockets for real-time features:
+
+```python
+import asyncio
+from typing import AsyncGenerator
+
+@strawberry.type
+class Subscription:
+    @strawberry.subscription
+    async def post_updates(self) -> AsyncGenerator[Post, None]:
+        # Stream real-time post updates
+        while True:
+            new_post = await wait_for_new_post()
+            yield new_post
+            await asyncio.sleep(1)
+
+# Enable subscriptions in GraphQL setup
+GraphQL(app, schema, enable_subscriptions=True)
+```
+
+### Error Handling
+
+Implement proper error handling in your resolvers:
+
+```python
+from strawberry.types import GraphQLResolveInfo
+
+@strawberry.field
+async def post(self, id: int, info: GraphQLResolveInfo) -> Post:
+    try:
+        post = await get_post_by_id(id)
+        if not post:
+            raise strawberry.GraphQLError("Post not found")
+        return post
+    except DatabaseError as e:
+        raise strawberry.GraphQLError(f"Database error: {str(e)}")
+```
+
+## Performance Optimization
+
+### DataLoader for N+1 Problems
+
+Prevent N+1 query problems with DataLoader:
+
+```python
+from strawberry.dataloader import DataLoader
+
+async def load_users(keys: List[int]) -> List[User]:
+    # Batch load users
+    users = await get_users_by_ids(keys)
+    return {user.id: user for user in users}
+
+# Create dataloader
+user_loader = DataLoader(load_users)
+
+@strawberry.type
+class Post:
+    id: int
+    title: str
+    author_id: strawberry.Private[int]
+    
+    @strawberry.field
+    async def author(self, info: strawberry.Info) -> User:
+        return await info.context["user_loader"].load(self.author_id)
+```
+
+### Caching Strategy
+
+Implement caching for frequently accessed data:
+
+```python
+from functools import lru_cache
+import redis
+
+cache = redis.Redis()
+
+@strawberry.field
+async def popular_posts(self) -> List[Post]:
+    # Check cache first
+    cached = cache.get("popular_posts")
+    if cached:
+        return json.loads(cached)
+    
+    # Fetch from database
+    posts = await get_popular_posts()
+    
+    # Cache for 5 minutes
+    cache.setex("popular_posts", 300, json.dumps(posts))
+    return posts
+```
+
+## Authentication & Authorization
+
+### JWT Authentication
+
+Implement JWT-based authentication:
+
+```python
+import jwt
+from strawberry.types import Info
+
+def get_current_user(info: Info) -> User:
+    request = info.context["request"]
+    auth_header = request.headers.get("Authorization")
+    
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise strawberry.GraphQLError("Authentication required")
+    
+    token = auth_header[7:]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload["user_id"]
+        return get_user_by_id(user_id)
+    except jwt.InvalidTokenError:
+        raise strawberry.GraphQLError("Invalid token")
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    async def create_post(
+        self, 
+        title: str, 
+        content: str, 
+        info: Info
+    ) -> Post:
+        user = get_current_user(info)
+        return await create_post(title, content, user.id)
+```
+
+### Role-based Authorization
+
+Add role-based access control:
+
+```python
+def require_role(required_role: str):
+    def decorator(func):
+        async def wrapper(self, info: Info, *args, **kwargs):
+            user = get_current_user(info)
+            if user.role != required_role:
+                raise strawberry.GraphQLError("Insufficient permissions")
+            return await func(self, info, *args, **kwargs)
+        return wrapper
+    return decorator
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    @require_role("admin")
+    async def delete_post(self, post_id: int, info: Info) -> bool:
+        return await delete_post_by_id(post_id)
+```
+
+## Testing Your GraphQL API
+
+### Unit Testing
+
+Test your resolvers individually:
+
+```python
+import pytest
+from strawberry.testing import GraphQLTestClient
+
+@pytest.mark.asyncio
+async def test_create_post():
+    schema = strawberry.Schema(query=Query, mutation=Mutation)
+    client = GraphQLTestClient(schema)
+    
+    result = await client.query(
+        """
+        mutation {
+            createPost(title: "Test Post", content: "Test content", authorId: 1) {
+                id
+                title
+                author {
+                    username
+                }
+            }
+        }
+        """
+    )
+    
+    assert result.data["createPost"]["title"] == "Test Post"
+```
+
+### Integration Testing
+
+Test the full Nexios integration:
+
+```python
+from nexios.testing import TestClient
+
+@pytest.mark.asyncio
+async def test_graphql_endpoint():
+    app = create_app()  # Your app creation function
+    
+    async with TestClient(app) as client:
+        response = await client.post(
+            "/graphql",
+            json={
+                "query": """
+                query {
+                    posts {
+                        id
+                        title
+                    }
+                }
+                """
+            }
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+```
+
+## Best Practices
+
+### Schema Design
+
+- **Use specific types**: Avoid generic JSON objects
+- **Implement pagination**: Use cursor-based pagination for large datasets
+- **Version your schema**: Use namespaces for different API versions
+- **Document your schema**: Use descriptions for types and fields
+
+```python
+@strawberry.type(description="A blog post with author and comments")
+class Post:
+    id: strawberry.ID(description="Unique identifier")
+    title: str(description="Post title")
+    content: str(description="Post content in markdown")
+    
+    @strawberry.field(description="Post author information")
+    async def author(self) -> User:
+        return await get_author(self.author_id)
+```
+
+### Performance Tips
+
+- **Use async resolvers**: Leverage Nexios's async architecture
+- **Implement DataLoader**: Prevent N+1 query problems
+- **Add caching**: Cache expensive operations
+- **Monitor query complexity**: Prevent expensive queries
+
+```python
+@strawberry.field
+async def posts(
+    self, 
+    limit: int = 10, 
+    offset: int = 0
+) -> List[Post]:
+    # Validate pagination parameters
+    if limit > 100:
+        raise strawberry.GraphQLError("Limit cannot exceed 100")
+    
+    return await get_posts_with_pagination(limit, offset)
+```
+
+## Deployment Considerations
+
+### Production Configuration
+
+Configure GraphQL for production:
+
+```python
+# Disable GraphiQL in production
+GraphQL(
+    app, 
+    schema, 
+    graphiql=False,  # Disable in production
+    path="/api/graphql"  # Custom endpoint
+)
+```
+
+### Monitoring
+
+Add query monitoring and logging:
+
+```python
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
+async def log_query_middleware(request, call_next):
+    start_time = time.time()
+    
+    # Log query details
+    query = request.json.get("query", "")
+    logger.info(f"GraphQL Query: {query[:100]}...")
+    
+    response = await call_next()
+    
+    # Log execution time
+    duration = time.time() - start_time
+    logger.info(f"Query executed in {duration:.3f}s")
+    
+    return response
+
+app.add_middleware(log_query_middleware)
+```
+
+## Conclusion
+
+Combining GraphQL with Nexios and Strawberry gives you a powerful stack for building modern APIs:
+
+- **Type Safety**: Automatic schema generation from Python types
+- **Performance**: Async-first architecture handles concurrent requests efficiently
+- **Flexibility**: Clients request exactly what they need
+- **Developer Experience**: Built-in tools for exploration and testing
+- **Real-time**: Subscriptions work seamlessly with WebSockets
+
+This combination is perfect for applications that need flexible data access patterns, real-time updates, and high performance. Whether you're building a blog API, e-commerce platform, or real-time dashboard, Nexios + GraphQL provides the tools you need.
+
+Ready to start building? Check out the [Nexios GraphQL documentation](https://nexios.dev/docs/graphql) and explore the [nexios-contrib](https://github.com/nexios-labs/nexios-contrib) package for more integrations.
+
+---
+
+:::tip
+Want to see more examples? Check out the [nexios-contrib examples](https://github.com/nexios-labs/nexios-contrib/tree/main/examples/graphql) repository for complete, runnable GraphQL applications.
+:::
+
+:::note
+This article covers GraphQL integration with Nexios 3.5+. Make sure you're using the latest version for all features mentioned.
+:::
